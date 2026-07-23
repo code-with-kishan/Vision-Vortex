@@ -1,0 +1,131 @@
+/* ==============================================
+   Vision Vortex - Digital Farm Management Portal
+   Main stylesheet
+   Theme: Green + White + Blue (as required)
+   ============================================== */
+
+:root {
+  --primary-green: #1e8449;
+  --dark-green: #145a32;
+  --light-green: #eafaf1;
+  --accent-blue: #2e86c1;
+  --white: #ffffff;
+  --text-dark: #2c3e50;
+}
+
+body {
+  font-family: "Segoe UI", Arial, sans-serif;
+  background-color: #f7fbf9;
+  color: var(--text-dark);
+}
+
+.navbar-vv {
+  background: linear-gradient(90deg, var(--dark-green), var(--primary-green));
+}
+
+.navbar-vv .navbar-brand,
+.navbar-vv .nav-link {
+  color: #ffffff !important;
+  font-weight: 500;
+}
+
+.navbar-vv .nav-link:hover {
+  color: #d4f5e0 !important;
+}
+
+.hero-section {
+  background: linear-gradient(135deg, var(--dark-green), var(--primary-green));
+  color: white;
+  padding: 90px 20px;
+}
+
+.hero-section .btn-outline-light:hover {
+  color: var(--dark-green);
+}
+
+.card-vv {
+  border: none;
+  border-radius: 16px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card-vv:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.stat-card {
+  border-radius: 16px;
+  padding: 20px;
+  color: white;
+}
+
+.stat-card.green { background: linear-gradient(135deg, #1e8449, #27ae60); }
+.stat-card.blue { background: linear-gradient(135deg, #2e86c1, #5dade2); }
+.stat-card.amber { background: linear-gradient(135deg, #d68910, #f5b041); }
+.stat-card.red { background: linear-gradient(135deg, #c0392b, #e74c3c); }
+
+.sidebar-vv {
+  background-color: var(--dark-green);
+  min-height: 100vh;
+  color: white;
+}
+
+.sidebar-vv a {
+  color: #d4f5e0;
+  display: block;
+  padding: 10px 16px;
+  border-radius: 10px;
+  text-decoration: none;
+  margin-bottom: 4px;
+}
+
+.sidebar-vv a:hover,
+.sidebar-vv a.active {
+  background-color: rgba(255, 255, 255, 0.15);
+  color: white;
+}
+
+.badge-healthy { background-color: #1e8449; }
+.badge-sick { background-color: #c0392b; }
+.badge-treatment { background-color: #d68910; }
+.badge-critical { background-color: #922b21; }
+.badge-duesoon { background-color: #d68910; }
+.badge-ontrack { background-color: #1e8449; }
+
+.btn-vv-primary {
+  background-color: var(--primary-green);
+  border-color: var(--primary-green);
+  color: white;
+}
+.btn-vv-primary:hover {
+  background-color: var(--dark-green);
+  border-color: var(--dark-green);
+  color: white;
+}
+
+.login-card {
+  max-width: 420px;
+  margin: 80px auto;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+}
+
+footer.vv-footer {
+  background-color: var(--dark-green);
+  color: #d4f5e0;
+  padding: 30px 0;
+}
+
+.fade-in {
+  animation: fadeInUp 0.5s ease both;
+}
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}

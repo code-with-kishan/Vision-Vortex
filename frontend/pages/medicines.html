@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Medicine Records | Vision Vortex</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<div class="d-flex">
+  <div class="sidebar-vv p-3" style="width:230px;">
+    <h5 class="text-white mb-4">🌱 Vision Vortex</h5>
+    <a href="dashboard.html"><i class="bi bi-speedometer2 me-2"></i>Dashboard</a>
+    <a href="animals.html"><i class="bi bi-clipboard-data me-2"></i>Animals</a>
+    <a href="medicines.html" class="active"><i class="bi bi-capsule me-2"></i>Medicine Records</a>
+    <a href="vaccination.html"><i class="bi bi-calendar-check me-2"></i>Vaccination</a>
+    <a href="inventory.html"><i class="bi bi-box-seam me-2"></i>Inventory</a>
+    <a href="analytics.html"><i class="bi bi-bar-chart-line me-2"></i>Analytics</a>
+    <a href="reports.html"><i class="bi bi-file-earmark-text me-2"></i>Reports</a>
+    <a href="settings.html"><i class="bi bi-gear me-2"></i>Settings</a>
+    <a href="#" id="logoutLink"><i class="bi bi-box-arrow-right me-2"></i>Logout</a>
+  </div>
+
+  <div class="flex-grow-1 p-4">
+    <div id="toast-container" style="position:fixed; top:20px; right:20px; z-index:1050;"></div>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <div>
+        <h2>Medicine Records</h2>
+        <p class="text-muted mb-0">This is where antimicrobial usage is tracked, including the withdrawal period.</p>
+      </div>
+      <button class="btn btn-vv-primary" data-bs-toggle="modal" data-bs-target="#medModal" onclick="openAddModal()">
+        <i class="bi bi-plus-lg"></i> Add Record
+      </button>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table table-hover bg-white card-vv">
+        <thead><tr><th>Animal</th><th>Medicine</th><th>Dosage</th><th>Vet</th><th>Start &rarr; End</th><th>Withdrawal Ends</th><th></th></tr></thead>
+        <tbody id="medTableBody"><tr><td colspan="7" class="text-center text-muted">Loading...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="medModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title" id="modalTitle">Add Medicine Record</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body">
+        <form id="medForm">
+          <input type="hidden" id="medId">
+          <div class="mb-2"><label class="form-label">Animal *</label><select class="form-select" id="animalId" required></select></div>
+          <div class="mb-2"><label class="form-label">Medicine Name *</label><input class="form-control" id="medicineName" required></div>
+          <div class="mb-2 form-check">
+            <input type="checkbox" class="form-check-input" id="isAntimicrobial" checked>
+            <label class="form-check-label" for="isAntimicrobial">This is an antimicrobial</label>
+          </div>
+          <div class="mb-2"><label class="form-label">Dosage</label><input class="form-control" id="dosage" placeholder="e.g. 10ml twice a day"></div>
+          <div class="mb-2"><label class="form-label">Purpose</label><input class="form-control" id="purpose"></div>
+          <div class="mb-2"><label class="form-label">Veterinarian Name</label><input class="form-control" id="vetName"></div>
+          <div class="row">
+            <div class="col mb-2"><label class="form-label">Start Date *</label><input type="date" class="form-control" id="startDate" required></div>
+            <div class="col mb-2"><label class="form-label">End Date</label><input type="date" class="form-control" id="endDate"></div>
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Withdrawal Period (days)</label>
+            <input type="number" class="form-control" id="withdrawalDays" value="0">
+            <small class="text-muted">Ask your vet how many days are needed for this medicine. We will calculate the end date automatically.</small>
+          </div>
+          <button type="submit" class="btn btn-vv-primary w-100 mt-2">Save Record</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="../js/api.js"></script>
+<script>
+  let medModal;
+  let editingId = null;
+  let animalsList = [];
+
+  async function init() {
+    await requireLogin();
+    medModal = new bootstrap.Modal(document.getElementById("medModal"));
+    await loadAnimalsDropdown();
+    loadMedicines();
+  }
+
+  async function loadAnimalsDropdown() {
+    const res = await apiRequest("/animals");
+    animalsList = res.data;
+    const select = document.getElementById("animalId");
+    if (animalsList.length === 0) {
+      select.innerHTML = '<option value="">-- Please add an animal first --</option>';
+    } else {
+      select.innerHTML = animalsList.map((a) => `<option value="${a.id}">${a.name || a.animal_tag} (${a.species})</option>`).join("");
+    }
+  }
+
+  async function loadMedicines() {
+    try {
+      const res = await apiRequest("/medicines");
+      const tbody = document.getElementById("medTableBody");
+      if (res.data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">No medicine records yet.</td></tr>';
+        return;
+      }
+      const today = new Date().toISOString().slice(0, 10);
+      tbody.innerHTML = res.data.map((m) => {
+        const withdrawalActive = m.withdrawal_end_date && m.withdrawal_end_date >= today;
+        return `
+        <tr>
+          <td>${m.animal_name || m.animal_tag}</td>
+          <td>${m.medicine_name} ${m.is_antimicrobial ? '<span class="badge bg-info text-dark">AMU</span>' : ""}</td>
+          <td>${m.dosage || "-"}</td>
+          <td>${m.vet_name || "-"}</td>
+          <td>${m.start_date?.slice(0,10)} &rarr; ${m.end_date ? m.end_date.slice(0,10) : "-"}</td>
+          <td>${m.withdrawal_end_date ? `<span class="badge ${withdrawalActive ? "bg-danger" : "bg-secondary"}">${m.withdrawal_end_date.slice(0,10)}</span>` : "-"}</td>
+          <td>
+            <button class="btn btn-sm btn-outline-primary" onclick='openEditModal(${JSON.stringify(m)})'><i class="bi bi-pencil"></i></button>
+            <button class="btn btn-sm btn-outline-danger" onclick="deleteMed(${m.id})"><i class="bi bi-trash"></i></button>
+          </td>
+        </tr>`;
+      }).join("");
+    } catch (err) {
+      showToast(err.message, true);
+    }
+  }
+
+  function openAddModal() {
+    editingId = null;
+    document.getElementById("modalTitle").textContent = "Add Medicine Record";
+    document.getElementById("medForm").reset();
+  }
+
+  function openEditModal(m) {
+    editingId = m.id;
+    document.getElementById("modalTitle").textContent = "Edit Medicine Record";
+    document.getElementById("animalId").value = m.animal_id;
+    document.getElementById("medicineName").value = m.medicine_name;
+    document.getElementById("isAntimicrobial").checked = !!m.is_antimicrobial;
+    document.getElementById("dosage").value = m.dosage || "";
+    document.getElementById("purpose").value = m.purpose || "";
+    document.getElementById("vetName").value = m.vet_name || "";
+    document.getElementById("startDate").value = m.start_date ? m.start_date.slice(0,10) : "";
+    document.getElementById("endDate").value = m.end_date ? m.end_date.slice(0,10) : "";
+    document.getElementById("withdrawalDays").value = m.withdrawal_days || 0;
+    medModal.show();
+  }
+
+  document.getElementById("medForm").addEventListener("submit", async function (e) {
+    e.preventDefault();
+    const payload = {
+      animalId: document.getElementById("animalId").value,
+      medicineName: document.getElementById("medicineName").value,
+      isAntimicrobial: document.getElementById("isAntimicrobial").checked,
+      dosage: document.getElementById("dosage").value,
+      purpose: document.getElementById("purpose").value,
+      vetName: document.getElementById("vetName").value,
+      startDate: document.getElementById("startDate").value,
+      endDate: document.getElementById("endDate").value,
+      withdrawalDays: document.getElementById("withdrawalDays").value,
+    };
+    try {
+      if (editingId) {
+        await apiRequest(`/medicines/${editingId}`, "PUT", payload);
+        showToast("Medicine record updated");
+      } else {
+        await apiRequest("/medicines", "POST", payload);
+        showToast("Medicine record added");
+      }
+      medModal.hide();
+      loadMedicines();
+    } catch (err) {
+      showToast(err.message, true);
+    }
+  });
+
+  async function deleteMed(id) {
+    if (!confirm("Delete this medicine record?")) return;
+    try {
+      await apiRequest(`/medicines/${id}`, "DELETE");
+      showToast("Record deleted");
+      loadMedicines();
+    } catch (err) {
+      showToast(err.message, true);
+    }
+  }
+
+  document.getElementById("logoutLink").addEventListener("click", async (e) => {
+    e.preventDefault();
+    await apiRequest("/auth/logout", "POST");
+    window.location.href = "../index.html";
+  });
+
+  init();
+</script>
+</body>
+</html>
